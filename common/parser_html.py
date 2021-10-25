@@ -24,7 +24,7 @@ def get_video_and_audio(res_text: str):
     for _ in script_ele_list:
         ele_text = None if _.text is None else str(_.text)
         if ele_text is not None and ele_text.startswith(play_info_prefix):
-            info_data = json.loads(ele_text.replace(play_info_prefix, ''))['data']
+            info_data = json.loads(ele_text.replace(play_info_prefix, '').split(';')[0])['data']
             info_data_dash = info_data['dash']
 
             # 视频清晰度
@@ -90,6 +90,34 @@ def get_200_audio(audio_infos: dict):
                 print(f'\tget_200_audio(): 抛出请求异常：{ex}, 当前请求地址{url}')
 
     return False, int(0), None
+
+
+def get_init_base_info(res_text: str):
+    """
+    解析html，返回该链接的基本初始化信息
+    :param res_text:
+    :return: dict
+    """
+    bili_doc = etree.HTML(res_text)
+    script_ele_list = bili_doc.xpath('//script')
+    play_info_prefix = 'window.__INITIAL_STATE__='
+
+    for _ in script_ele_list:
+        ele_text = None if _.text is None else str(_.text)
+        if ele_text is not None and ele_text.startswith(play_info_prefix):
+            return json.loads(ele_text.replace(play_info_prefix, '').split(';')[0])
+
+    return None
+
+
+def get_cid_by_base_info(base_info: str):
+    """
+    返回cid，用于弹幕文件使用
+    :param base_info:
+    :return: str
+    """
+
+    return str(base_info['videoData']['cid'])
 
 
 if __name__ == '__main__':

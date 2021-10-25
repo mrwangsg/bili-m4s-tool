@@ -52,6 +52,7 @@ def req_with_bv_id(bv_id: str):
     url = INDEX_URL_PREFIX + bv_id
     headers = get_headers('www.bilibili.com')
     res = requests.request(method='GET', url=url, headers=headers, verify=False)
+    # print(res.headers)
     # print(res.status_code)
 
     return res.text
@@ -91,3 +92,39 @@ def req_down_video_or_audio(content_range: int, url: str):
     headers['Range'] = f'bytes=0-{content_range}'
 
     return requests.request(method='GET', url=url, headers=headers, verify=False)
+
+
+# 弹幕请求地址
+DANMU_URL_PREFIX_PROTOBUF = 'https://api.bilibili.com/x/v2/dm/web/seg.so?'
+# 弹幕请求成功，
+DANMU_RES_SUCC_CODE = int(200)
+DANMU_RES_EMPTY_CODE = int(304)
+
+
+def get_dan_mu_query(oid: str, segment_index: int = 1):
+    return f'type=1&oid={oid}&segment_index={segment_index}'
+
+
+def cycle_req_dan_mu_with_protobuf(oid: str):
+    dan_mu_seg_num, req_res = 0, []
+
+    try:
+        while dan_mu_seg_num < 10:
+            dan_mu_seg_num += 1
+
+            url = DANMU_URL_PREFIX_PROTOBUF + get_dan_mu_query(oid, dan_mu_seg_num)
+            res = requests.request(method='GET', url=url, verify=False)
+
+            if res.status_code == DANMU_RES_SUCC_CODE:
+                req_res.append(res)
+            elif res.status_code == DANMU_RES_EMPTY_CODE:
+                break
+            else:
+                # 其它返回码，抛出异常
+                raise Exception(f"请求弹幕，返回码为：{res.status_code}，返回信息为：{res.text}")
+
+        return req_res
+
+    except Exception as ex:
+        print(ex)
+        return req_res

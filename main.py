@@ -19,6 +19,7 @@ def do_task_id(bv_id: str):
 
     # 请求视频首页
     bili_text = req_get.req_with_bv_id(bv_id)
+    bili_init_base_info = parser_html.get_init_base_info(bili_text)
 
     # 解析标签，获取video和audio视频链接
     video_infos, video_accept, audio_infos = parser_html.get_video_and_audio(bili_text)
@@ -47,6 +48,14 @@ def do_task_id(bv_id: str):
         file_util.merge_video_and_audio_2_mp4(bv_id)
         print(f'\t文件合并完毕！')
 
+    # 下载弹幕文件
+    print(f'\t开始下载，弹幕文件...')
+    oid = parser_html.get_cid_by_base_info(bili_init_base_info)
+    dan_mu_res_list = req_get.cycle_req_dan_mu_with_protobuf(oid)
+    if len(dan_mu_res_list) != 0:
+        file_util.save_dan_mu_file_with_res_list(dan_mu_res_list, bv_id, oid)
+    print(f'\t弹幕文件下载完毕！')
+
 
 if __name__ == "__main__":
     print('hello, m4s!')
@@ -59,6 +68,7 @@ if __name__ == "__main__":
             do_task_id(_id_)
 
         except Exception as ex:
+            print(ex)
             traceback.format_exc()
         finally:
             print(f'耗时: {int(time.time() - start_time)}s')
